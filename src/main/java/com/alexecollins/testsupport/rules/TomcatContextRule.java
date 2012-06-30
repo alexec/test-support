@@ -28,9 +28,9 @@ import java.sql.DriverManager;
  *
  * @author alex.e.c@gmail.com
  */
-public class CatalinaContextRule implements TestRule {
+public class TomcatContextRule implements TestRule {
 
-    public static final Logger LOGGER = Logger.getLogger(CatalinaContextRule.class);
+    public static final Logger LOGGER = Logger.getLogger(TomcatContextRule.class);
 
     /**
      * Creates all the sub-contexts for a name.
@@ -50,7 +50,7 @@ public class CatalinaContextRule implements TestRule {
 
     private final File serverXml;
 
-    public CatalinaContextRule(File serverXml, Object target) {
+    public TomcatContextRule(File serverXml, Object target) {
         if (serverXml == null || !serverXml.isFile()) {throw new IllegalArgumentException();}
         if (target == null) {throw new IllegalArgumentException();}
         this.serverXml = serverXml;
