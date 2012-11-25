@@ -1,11 +1,12 @@
 package com.alexecollins.testsupport.rules;
 
 import org.apache.catalina.UserDatabase;
-import org.apache.log4j.Logger;
 import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -34,7 +35,7 @@ import java.sql.DriverManager;
  */
 public class TomcatContextRule implements TestRule {
 
-    public static final Logger LOGGER = Logger.getLogger(TomcatContextRule.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(TomcatContextRule.class);
 
     /**
      * Creates all the sub-contexts for a name.
