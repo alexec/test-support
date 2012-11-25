@@ -1,5 +1,6 @@
 package com.alexecollins.testsupport.rules;
 
+import org.apache.catalina.UserDatabase;
 import org.apache.log4j.Logger;
 import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.junit.rules.TestRule;
@@ -16,7 +17,10 @@ import javax.sql.DataSource;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.sql.Driver;
 import java.sql.DriverManager;
 
@@ -48,10 +52,14 @@ public class TomcatContextRule implements TestRule {
         }
     }
 
-    private final File serverXml;
+    private final URI serverXml;
 
-    public TomcatContextRule(File serverXml, Object target) {
-        if (serverXml == null || !serverXml.isFile()) {throw new IllegalArgumentException();}
+	public TomcatContextRule(File serverXml, Object target) {
+		this(serverXml.toURI(), target);
+	}
+
+	public TomcatContextRule(URI serverXml, Object target) {
+        if (serverXml == null) {throw new IllegalArgumentException();}
         if (target == null) {throw new IllegalArgumentException();}
         this.serverXml = serverXml;
     }
@@ -81,9 +89,15 @@ public class TomcatContextRule implements TestRule {
 
         createSubContexts(ic, "java:/comp/env");
 
-        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        final DocumentBuilder builder = factory.newDocumentBuilder();
-        final Document document = builder.parse(serverXml);
+        final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+        final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+	    final InputStream in = serverXml.toURL().openStream();
+	    final Document document;
+	    try {
+		    document = documentBuilder.parse(in);
+	    } finally {
+		    in.close();
+	    }
 
         // create Environment
         {
@@ -112,44 +126,24 @@ public class TomcatContextRule implements TestRule {
 
                 final Object instance;
                 if (type.equals(DataSource.class)) {
-                    {
-                        @SuppressWarnings("unchecked") // this mus be driver?
-                        final Class<? extends Driver> driverClass = (Class<? extends Driver>) Class.forName(resource.getAttribute("driverClassName"));
+                    @SuppressWarnings("unchecked") // this mus be driver?
+                    final Class<? extends Driver> driverClass = (Class<? extends Driver>) Class.forName(resource.getAttribute("driverClassName"));
 
-                        DriverManager.registerDriver(driverClass.newInstance());
-                    }
+                    DriverManager.registerDriver(driverClass.newInstance());
 
-                    final BasicDataSource dataSource = new BasicDataSource();
-                    // find all the bean attributes and set them use some reflection
-                    for (Method method : dataSource.getClass().getMethods()) {
+                    instance = new BasicDataSource();
+                } else if (type.equals(UserDatabase.class)) {
+                    @SuppressWarnings("unchecked")
+                    final Class<UserDatabase> factory = (Class<UserDatabase>) Class.forName(resource.getAttribute("factory"));
 
-                        if (!method.getName().matches("^set.*")) {continue;}
-
-                        final String x = method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4);
-
-                        if (!resource.hasAttribute(x)) {continue;}
-                        Class<?> y = method.getParameterTypes()[0]; // might be primitive
-
-                        if (y.isPrimitive()) {
-                            if (y.getName().equals("boolean")) y = Boolean.class;
-                            if (y.getName().equals("byte")) y = Byte.class;
-                            if (y.getName().equals("char")) y = Character.class;
-                            if (y.getName().equals("double")) y = Double.class;
-                            if (y.getName().equals("float")) y = Float.class;
-                            if (y.getName().equals("int")) y = Integer.class;
-                            if (y.getName().equals("long")) y = Long.class;
-                            if (y.getName().equals("short")) y = Short.class;
-                            if (y.getName().equals("void")) y = Void.class;
-                        }
-
-                        method.invoke(dataSource, y.getConstructor(String.class).newInstance(resource.getAttribute(x)));
-                    }
-
-                    instance = dataSource;
+                    instance = factory.newInstance();
                 } else {
                     // not supported, yet...
                     throw new AssertionError("type " + type + " not supported");
                 }
+
+                // find all the bean attributes and set them use some reflection
+                injectDependencies(resource, instance);
 
                 LOGGER.info("binding " + name + " <" + instance + ">");
 
@@ -157,6 +151,32 @@ public class TomcatContextRule implements TestRule {
 
                 ic.bind(name, instance);
             }
+        }
+    }
+
+    private static void injectDependencies(Element resource, Object target) throws IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException {
+        for (Method method : target.getClass().getMethods()) {
+
+            if (!method.getName().matches("^set.*")) {continue;}
+
+            final String name = method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4);
+
+            if (!resource.hasAttribute(name)) {continue;}
+            Class<?> type = method.getParameterTypes()[0]; // might be primitive
+
+            if (type.isPrimitive()) {
+                if (type.getName().equals("boolean")) type = Boolean.class;
+                if (type.getName().equals("byte")) type = Byte.class;
+                if (type.getName().equals("char")) type = Character.class;
+                if (type.getName().equals("double")) type = Double.class;
+                if (type.getName().equals("float")) type = Float.class;
+                if (type.getName().equals("int")) type = Integer.class;
+                if (type.getName().equals("long")) type = Long.class;
+                if (type.getName().equals("short")) type = Short.class;
+                if (type.getName().equals("void")) type = Void.class;
+            }
+
+            method.invoke(target, type.getConstructor(String.class).newInstance(resource.getAttribute(name)));
         }
     }
 

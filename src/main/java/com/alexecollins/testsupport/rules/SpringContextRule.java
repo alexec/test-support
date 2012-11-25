@@ -13,7 +13,7 @@ import java.lang.reflect.Field;
 /**
  * Creates a context for tests that use Spring.
  * <p/>
- * Fields in the test annotated  are auto-wired
+ * Public fields in the test annotated {@link Autowired} are auto-wired from the context.
  *
  * @author alexec (alex.e.c@gmail.com)
  */
