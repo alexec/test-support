@@ -4,11 +4,8 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
-import java.lang.reflect.Field;
 
 /**
  * Creates a context for tests that use Spring.
@@ -36,17 +33,8 @@ public class SpringContextRule implements TestRule {
             public void evaluate() throws Throwable {
                 ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(
                         locations);
-                AutowireCapableBeanFactory beanFactory = context
-                        .getAutowireCapableBeanFactory();
-
-                /* As this is an example of @Rule, this is a rough hand-rolled injector,
-                * not suitable for production.
-                * More capable ones, that support @Inject, @Qualifier etc. probably exist. */
-                for (Field f : target.getClass().getFields()) {
-                    if (f.isAnnotationPresent(Autowired.class)) {
-                        f.set(target, context.getBean(f.getName(), f.getType()));
-                    }
-                }
+	            context
+	                    .getAutowireCapableBeanFactory().autowireBean(target);
                 context.start();
                 try {
                     base.evaluate();
