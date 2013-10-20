@@ -11,4 +11,18 @@
 		<constructor-arg value="bar"/>
 	</bean>
 
+    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="localhost" />
+        <property name="port" value="10587" />
+        <property name="username" value="username" />
+        <property name="password" value="password" />
+
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.auth">false</prop>
+                <prop key="mail.smtp.starttls.enable">false</prop>
+            </props>
+        </property>
+    </bean>
+
 </beans>
