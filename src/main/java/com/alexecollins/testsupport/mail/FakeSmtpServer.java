@@ -116,4 +116,8 @@ public class FakeSmtpServer implements Runnable, Closeable {
 		out.println(text);
 		out.flush();
 	}
+
+	public void clear() {
+		messages.clear();
+	}
 }
