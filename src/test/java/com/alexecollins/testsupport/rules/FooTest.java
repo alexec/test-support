@@ -1,7 +1,5 @@
 package com.alexecollins.testsupport.rules;
 
-import com.alexecollins.testsupport.rules.MockRule;
-import com.alexecollins.testsupport.rules.SpringContextRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -19,7 +17,7 @@ import static org.mockito.Mockito.when;
 public class FooTest {
 
     @Rule
-    public TestRule contextRule = new SpringContextRule(new String[]{"testContext.xml"}, this);
+    public TestRule contextRule = new SpringContextRule(this, "testContext.xml");
 
     @Rule
     public TestRule mockRule = new MockRule(this);

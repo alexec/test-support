@@ -16,16 +16,16 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  */
 public class SpringContextRule implements TestRule {
 
+	/** The target test. */
+	private final Object target;
+
     /** A list of class-path contexts. */
     private final String[] locations;
 
-    /** The target test. */
-    private final Object target;
-
-    public SpringContextRule(String[] locations, Object target) {
-        this.locations = locations;
+    public SpringContextRule(Object target, String... locations) {
         this.target = target;
-    }
+		this.locations = locations;
+	}
 
     public Statement apply(final Statement base, Description description) {
         return new Statement() {
